@@ -38,8 +38,8 @@ class MyApp(App):
     def build(self):
         layout = BoxLayout(orientation='vertical')
         delete_media_btn = DeleteMediaButton()
-        gps_btn = Button(text='Toggle GPS')
-        airplane_mode_btn = Button(text='Toggle airplane mode')
+        gps_btn = ToggleLocationServiceButton()
+        airplane_mode_btn = ToggleAirplaneModeButton()
 
         # layout.add_widget(self.filepath) # Show selected filepath for debugging
         layout.add_widget(delete_media_btn)
@@ -60,8 +60,10 @@ class DeleteMediaButton(Button):
 
     def on_selection(self, *a, **k):
         for item in self.selection:
+            # Delete the file and refresh media cache
             if platform == 'android':
-                # Delete the file and refresh media cache
+                from jnius import autoclass, cast
+
                 from jnius import autoclass
                 PythonActivity = autoclass('org.kivy.android.PythonActivity')
                 Intent = autoclass('android.content.Intent')
@@ -73,41 +75,49 @@ class DeleteMediaButton(Button):
                 intent = Intent()
                 intent.setAction(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
                 intent.setData(Uri.fromFile(selected_file))
-                currentActivity = cast(
-                    'android.app.Activity', PythonActivity.mActivity
-                )
+                currentActivity = cast('android.app.Activity', PythonActivity.mActivity)
                 currentActivity.sendBroadcast(intent)
 
     text = 'Delete selected media'
     on_release = select
 
-class ToggleAirplaneModeButton(Button):
 
-    def toggle_airplane_mode():
+class ToggleLocationServiceButton(Button):
+    def show_location_settings(self):
         if platform == 'android':
             from jnius import autoclass, cast
+
             PythonActivity = autoclass('org.kivy.android.PythonActivity')
             Intent = autoclass('android.content.Intent')
             Settings = autoclass('android.provider.Settings')
-
-            # Check airplane mode status
-            airplane_mode_is_enabled
-
-            # Set airplane mode
-            Settings.Global.putInt(
-                ,
-                Settings.Global.AIRPLANE_MODE_ON,
-                1 if airplane_mode_is_enabled else 0
-            )
             
-            # Broadcast airplane mode change event
-            intent = Intent()
-            intent.setAction(Intent.ACTION_AIRPLANE_MODE_CHANGED)
-            intent.putExtra('state', airplane_mode_is_enabled)
+            # Redirect to the location source settings page
+            intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
             currentActivity = cast('android.app.Activity', PythonActivity.mActivity)
-            currentActivity.sendBroadcast(intent)
+            currentActivity.startActivity(intent)
 
-    on_release = toggle_airplane_mode
+    text = 'Toggle location service'
+    on_release = show_location_settings
+
+
+class ToggleAirplaneModeButton(Button):
+    def show_airplane_mode_settings(self):
+        if platform == 'android':
+            from jnius import autoclass, cast
+
+            PythonActivity = autoclass('org.kivy.android.PythonActivity')
+            Intent = autoclass('android.content.Intent')
+            Settings = autoclass('android.provider.Settings')
+            
+            # Redirect to the airplane mode settings page
+            intent = Intent()
+            intent.setAction(Settings.ACTION_AIRPLANE_MODE_SETTINGS)
+            currentActivity = cast('android.app.Activity', PythonActivity.mActivity)
+            currentActivity.startActivity(intent)
+
+    text = 'Toggle airplane mode'
+    on_release = show_airplane_mode_settings
+
 
 if __name__ == '__main__':
     MyApp(title='My App').run()
