@@ -8,6 +8,8 @@ from plyer import filechooser
 
 
 if platform == 'android':
+    # Request for file access permissions
+
     from jnius import autoclass, cast
     from android import mActivity, api_version
 
@@ -24,27 +26,25 @@ if platform == 'android':
             uri = Uri.parse('package:' + activity.getPackageName())
             intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, uri)
             currentActivity = cast('android.app.Activity', PythonActivity.mActivity)
-            currentActivity.startActivityForResult(intent, 101)
+            currentActivity.startActivity(intent)
         except:
-            intent = Intent()
-            intent.setAction(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+            intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
             currentActivity = cast('android.app.Activity', PythonActivity.mActivity)
-            currentActivity.startActivityForResult(intent, 101)
+            currentActivity.startActivity(intent)
 
 
 class MyApp(App):
-    filepath = Label()
 
     def build(self):
         layout = BoxLayout(orientation='vertical')
         delete_media_btn = DeleteMediaButton()
-        gps_btn = ToggleLocationServiceButton()
+        location_btn = ToggleLocationServiceButton()
         airplane_mode_btn = ToggleAirplaneModeButton()
 
-        # layout.add_widget(self.filepath) # Show selected filepath for debugging
         layout.add_widget(delete_media_btn)
-        layout.add_widget(gps_btn)
+        layout.add_widget(location_btn)
         layout.add_widget(airplane_mode_btn)
+
         return layout
 
 
@@ -59,12 +59,12 @@ class DeleteMediaButton(Button):
         self.selection = selection
 
     def on_selection(self, *a, **k):
+        # Delete the file and refresh media cache
+
         for item in self.selection:
-            # Delete the file and refresh media cache
             if platform == 'android':
                 from jnius import autoclass, cast
 
-                from jnius import autoclass
                 PythonActivity = autoclass('org.kivy.android.PythonActivity')
                 Intent = autoclass('android.content.Intent')
                 File = autoclass('java.io.File')
@@ -72,8 +72,7 @@ class DeleteMediaButton(Button):
                 selected_file = File(item)
                 selected_file.delete()
 
-                intent = Intent()
-                intent.setAction(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
+                intent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
                 intent.setData(Uri.fromFile(selected_file))
                 currentActivity = cast('android.app.Activity', PythonActivity.mActivity)
                 currentActivity.sendBroadcast(intent)
@@ -84,6 +83,8 @@ class DeleteMediaButton(Button):
 
 class ToggleLocationServiceButton(Button):
     def show_location_settings(self):
+        # Redirect to the location source settings page
+
         if platform == 'android':
             from jnius import autoclass, cast
 
@@ -91,7 +92,6 @@ class ToggleLocationServiceButton(Button):
             Intent = autoclass('android.content.Intent')
             Settings = autoclass('android.provider.Settings')
             
-            # Redirect to the location source settings page
             intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
             currentActivity = cast('android.app.Activity', PythonActivity.mActivity)
             currentActivity.startActivity(intent)
@@ -102,6 +102,8 @@ class ToggleLocationServiceButton(Button):
 
 class ToggleAirplaneModeButton(Button):
     def show_airplane_mode_settings(self):
+        # Redirect to the airplane mode settings page
+        
         if platform == 'android':
             from jnius import autoclass, cast
 
@@ -109,9 +111,7 @@ class ToggleAirplaneModeButton(Button):
             Intent = autoclass('android.content.Intent')
             Settings = autoclass('android.provider.Settings')
             
-            # Redirect to the airplane mode settings page
-            intent = Intent()
-            intent.setAction(Settings.ACTION_AIRPLANE_MODE_SETTINGS)
+            intent = Intent(Settings.ACTION_AIRPLANE_MODE_SETTINGS)
             currentActivity = cast('android.app.Activity', PythonActivity.mActivity)
             currentActivity.startActivity(intent)
 
@@ -120,4 +120,4 @@ class ToggleAirplaneModeButton(Button):
 
 
 if __name__ == '__main__':
-    MyApp(title='My App').run()
+    MyApp(title='My Application').run()
